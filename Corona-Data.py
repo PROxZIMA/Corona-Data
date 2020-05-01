@@ -99,7 +99,7 @@ if __name__ == '__main__':
     content = requests.get('https://www.mohfw.gov.in/')
 
     #Get the html content and parse it in HTML/XML format
-    soup = bs(content.content, 'lxml')
+    soup = bs(content.content, 'html.parser')
 
     #Find table using class attribute
     table_site = soup.find("table", attrs={'class': 'table table-striped'})
