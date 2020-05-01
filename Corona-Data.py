@@ -114,7 +114,7 @@ if __name__ == '__main__':
     dftable.loc[dftable.index[-1]+  1] = ['','Total number of confirmed cases',dftable['Cured/Discharged/Migrated'].astype(int).sum(),dftable['Death'].astype(int).sum(),dftable['Total Cases'].astype(int).sum()]
 
     #Prints dataframe without the indices
-    print(dftable.to_string(index=False, justify='center'))
+    print(dftable.to_string(index=False))
     print('Active Cases:', dftable.iloc[-1]['Total Cases']-dftable.iloc[-1]['Cured/Discharged/Migrated']-dftable.iloc[-1]['Death'])
     
     #Displays the Graph
