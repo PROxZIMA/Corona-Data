@@ -31,5 +31,5 @@ ___
 <img src="images/graph.png" width="750">
 
 ___
-If you find want any feature or want to suggest something then feel free to raise an issue 
+If you want any extra feature or want to suggest something then feel free to raise an issue 
 # Arigatou
