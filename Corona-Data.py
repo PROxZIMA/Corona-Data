@@ -1,6 +1,4 @@
-from bs4 import BeautifulSoup as bs
 import matplotlib.pyplot as plt
-import requests
 import numpy as np
 import pandas as pd
 
