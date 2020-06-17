@@ -5,42 +5,6 @@ import numpy as np
 import pandas as pd
 
 
-
-def tabledata(tablehtml):
-    """
-    A function which returns data as {'cases':[1, 2, 3], 'States':['Goa', 'Kerala', 'other stater']}
-    It takes html format of a table and returns a well-defined dictionery
-    """
-    data = {}
-
-    #Finds column heads
-    table_heads = tablehtml.find('thead').find('tr').findAll('th')
-    #Create a dictionary with keys as Column head and values as empty list
-    for table_head in table_heads:
-        data[table_head.text.strip()] = []
-
-    #Finds data under a specific column
-    table_bodies = tablehtml.find('tbody').findAll('tr')
-    count = 0
-    for table_body in table_bodies:
-
-        #Limits the total reach of the table_body
-        count += 1
-        if count == 38: break
-
-        #Append each data of a row to individual key
-        #If initial dict is like {'cases':[], 'States':[]}
-        #The this loop gives {'cases':[1], 'States':['Goa']} if row is [1, 'Goa']
-        #Then in next loop gives {'cases':[1, 2], 'States':['Goa', 'Kerala']} if next row is [2, 'Kerala']
-        for (i, j), table_body_data in zip(data.items(), table_body.findAll('td')):
-            try:
-                j.append(int(table_body_data.text.strip()))
-            except ValueError:
-                j.append(table_body_data.text.strip())
-
-    return data
-
-
 def graph(dftable):
     """
     Displays a graph using the dictionary's dataframe
@@ -65,7 +29,9 @@ def graph(dftable):
     ax.set_xticklabels(dftable['Name of State / UT'])
 
     #Set the y ticks with list of ticks
-    ax.set_yticks(np.linspace(0, 80000, 21))
+    maxi = max(dftable['Total Confirmed cases*'])
+    reach = maxi - maxi%10000 + 10000 # Finds roundoff of max value
+    ax.set_yticks(np.linspace(0, reach, 21))
 
     #Create a legend
     ax.legend()
@@ -98,23 +64,25 @@ def graph(dftable):
 
 if __name__ == '__main__':
 
-    #Sends get request
-    content = requests.get('https://www.mohfw.gov.in/')
+    # Official Covid-19 cases tracker
+    link = 'https://www.mohfw.gov.in/'
 
-    #Get the html content and parse it in HTML/XML format
-    soup = bs(content.content, 'html.parser')
+    # Extract all tables as datframe object in list
+    dfs = pd.read_html(link)
 
-    #Find table using class attribute
-    table_site = soup.find("table", attrs={'class': 'table table-striped'})
+    # Gets the first dataframe upto required columns
+    df = dfs[0].head(37)
 
-    #Get dictionary output from 'table' data function
-    table = tabledata(table_site)
+    # Convets string column objects(str by default) to float and thenn to int
+    pd.options.mode.chained_assignment = None # hides SettingWithCopyWarning
 
-    #Creates a dataframe. Here table is a well defined dictionery
-    dftable = pd.DataFrame(table)
+    df['Active Cases*'] = pd.to_numeric(df['Active Cases*']).convert_dtypes()
+    df['Cured/Discharged/Migrated*'] = pd.to_numeric(df['Cured/Discharged/Migrated*']).convert_dtypes()
+    df['Deaths**'] = pd.to_numeric(df['Deaths**']).convert_dtypes()
+    df['Total Confirmed cases*'] = pd.to_numeric(df['Total Confirmed cases*']).convert_dtypes()
 
-    #Prints dataframe without the indices
-    print(dftable.to_string(index=False))
+    # Prints dataframe without the indices
+    print(df.to_string(index=False))
 
     #Displays the Graph
-    graph(dftable)
+    graph(df)
