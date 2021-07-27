@@ -29,7 +29,3 @@ ___
 ## Images
 <img src="images/terminal.png" width="750">
 <img src="images/graph.png" width="750">
-
-___
-If you want any extra feature or want to suggest something then feel free to raise an issue 
-# Arigatou
