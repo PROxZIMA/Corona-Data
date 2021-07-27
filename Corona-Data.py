@@ -1,17 +1,24 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import requests
 
 
 def graph(dftable):
     """
-    Displays a graph using the dictionary's dataframe
+    Displays a graph using the dataframe
+
+    Parameters
+    ----------
+    df   : pandas.core.frame.DataFrame
+           The DataFrame to format
     """
-    # Removes last 2 rows from the data frame for plotting purpose
-    dftable = dftable.drop(dftable.index[[-2, -1]])
+
+    # Removes last from the data frame for plotting only states
+    dftable = dftable.drop(dftable.index[[-1]])
 
     # Sorts whole dataframe in ascending order
-    dftable = dftable.sort_values('Total Confirmed cases*')
+    dftable = dftable.sort_values('Cured Cases')
 
     # Creates a wellspaced array equal to rows in table
     x = np.linspace(1, len(dftable.index), len(dftable.index))
@@ -20,18 +27,18 @@ def graph(dftable):
     ax = plt.subplot()
 
     # Creates bar according to the dataframe
-    bar_c = ax.bar(x-0.2, dftable['Cured/Discharged/Migrated*'], width=0.2, color='g', label='Cured Cases')
-    bar_d = ax.bar(x, dftable['Deaths**'], width=0.2, color='r', label='Deaths')
-    bar_t = ax.bar(x+0.2, dftable['Total Confirmed cases*'], width=0.2, color='b', label='Total Confirmed cases')
+    bar_a = ax.bar(x-0.2, dftable['Active Cases'], width=0.2, color='b', label='Total Active Cases')
+    bar_c = ax.bar(x, dftable['Cured Cases'], width=0.2, color='g', label='Cured')
+    bar_d = ax.bar(x+0.2, dftable['Death Cases'], width=0.2, color='r', label='Deaths')
 
     # Set the x ticks with list of ticks
     ax.set_xticks(x)
 
     # Set the labels to the ticks
-    ax.set_xticklabels(dftable['Name of State / UT'])
+    ax.set_xticklabels(dftable['Name of State/UT'])
 
     # Set the y ticks with list of ticks
-    maxi = max(dftable['Total Confirmed cases*'])
+    maxi = max(dftable['Cured Cases'])
     reach = maxi - maxi%10000 + 10000 # Finds roundoff of max value
     ax.set_yticks(np.linspace(0, reach, 21))
 
@@ -45,47 +52,83 @@ def graph(dftable):
     plt.ylabel('People Affected')
 
     # Add Height to individual bars
-    def autolabel(rects):
+    def autoLabel(rects):
         for rect in rects:
             height = rect.get_height()
             
             # Formatting and placing the height
             ax.annotate(f'{height}',
                         xy=(rect.get_x() + rect.get_width() / 2, height),
-                        fontsize='5.6',
+                        fontsize='5',
                         xytext=(0, 5),
                         textcoords="offset points",
                         ha='center', va='bottom', rotation='90')
 
-    autolabel(bar_c)
-    autolabel(bar_d)
-    autolabel(bar_t)
+    autoLabel(bar_a)
+    autoLabel(bar_c)
+    autoLabel(bar_d)
+
+    # Set plot dimensions
+    plt.gcf().set_size_inches(15, 5)
 
     # Most important thing which displays the graph
     plt.show()
 
 
+def change(old, new):
+    '''
+    Provides the increment/decrement in cases on daily basis
+
+    >>> change(2, 6)
+    >>> 4↑
+
+    >>> change(5, 3)
+    >>> 2↓
+    '''
+    return '⇔ ' + str(abs(int(old) - int(new))) + ('↓' if old > new else '↑' if old < new else '•')
+
+
 if __name__ == '__main__':
 
     # Official Covid-19 cases tracker
-    link = 'https://www.mohfw.gov.in/'
+    urlAPI = 'https://www.mohfw.gov.in/data/datanew.json'
 
-    # Extract all tables as datframe object in list
-    dfs = pd.read_html(link)
+    # Get the response and pasrse to JSON
+    response = requests.post(urlAPI).json()
 
-    # Gets the first dataframe upto required columns
-    df = dfs[0].head(38)
+    # Store the data of each state in a list
+    data = []
+    for x in response:
+        data.append([x['sno'],
+                     x['state_name'][:22],
+                     int(x['new_active']),
+                     change(x['active'], x['new_active']),
+                     int(x['new_cured']),
+                     change(x['cured'], x['new_cured']),
+                     int(x['new_death']),
+                     change(x['death'], x['new_death'])])
 
-    # Convets string column objects(str by default) to float and thenn to int
-    pd.options.mode.chained_assignment = None # hides SettingWithCopyWarning
+    # Create the dataframe from the data list
+    df = pd.DataFrame(data, columns=['S. No.',
+                                     'Name of State/UT',
+                                     'Active Cases',
+                                     'aChange',
+                                     'Cured Cases',
+                                     'cChange',
+                                     'Death Cases',
+                                     'dChange'])
 
-    df['Active Cases*'] = pd.to_numeric(df['Active Cases*']).convert_dtypes()
-    df['Cured/Discharged/Migrated*'] = pd.to_numeric(df['Cured/Discharged/Migrated*']).convert_dtypes()
-    df['Deaths**'] = pd.to_numeric(df['Deaths**']).convert_dtypes()
-    df['Total Confirmed cases*'] = pd.to_numeric(df['Total Confirmed cases*']).convert_dtypes()
+    # Last row of dataframe is Total Case
+    df.at[36, 'S. No.'] = ''
+    df.at[36, 'Name of State/UT'] = 'Total Cases'
 
-    # Prints dataframe without the indices
-    print(df.to_string(index=False))
+    # Prints dataframe without the indices and proper alignment
+    print(df.to_string(formatters={'aChange': '{:<8s}'.format,
+                                   'cChange': '{:<8s}'.format,
+                                   'dChange': '{:<8s}'.format},
+                       index=False,
+                       justify='right'))
 
     # Displays the Graph
-    graph(df)
+    #graph(df)
+
