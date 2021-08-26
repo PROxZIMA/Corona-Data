@@ -130,5 +130,5 @@ if __name__ == '__main__':
                        justify='right'))
 
     # Displays the Graph
-    #graph(df)
+    graph(df)
 
